@@ -24,16 +24,12 @@ pipeline {
     stage('Select Test') {
       steps {
         script {
-          def filesRaw = sh(script: 'ls -1 tests/*.jmx 2>/dev/null || true', returnStdout: true).trim()
-          if (filesRaw) {
-            def choicesText = filesRaw.split('\n').join('\n')
-            def selection = input(message: 'Select a JMX test from tests', parameters: [
-              [$class: 'ChoiceParameterDefinition', name: 'SELECTED_JMX', choices: choicesText, description: 'Pick one test to run']
-            ])
-            env.TEST = selection
-            echo "Selected test: ${env.TEST}"
+          def provided = params.TEST?.trim()
+          if (provided) {
+            env.TEST = provided
+            echo "Using TEST parameter: ${env.TEST}"
           } else {
-            echo 'No .jmx files found under tests/. Falling back to TEST parameter.'
+            error 'TEST parameter is required; no interactive selection is available.'
           }
         }
       }
