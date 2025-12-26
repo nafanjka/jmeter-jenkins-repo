@@ -1,0 +1,97 @@
+pipeline {
+  agent any
+  options { timestamps() }
+  parameters {
+    string(name: 'TEST', defaultValue: 'jmeter-ci/tests/Test_Plan.jmx', description: 'Single JMX file to run (relative to repo root or absolute).')
+    string(name: 'ENDPOINT', defaultValue: 'https://sometestendpoint.com:8000', description: 'Target endpoint URL (protocol://host:port).')
+
+    string(name: 'THREADS', defaultValue: '', description: 'Optional: -Jthreads value')
+    string(name: 'DURATION', defaultValue: '', description: 'Optional: -Jduration (seconds)')
+    string(name: 'RAMP_UP', defaultValue: '', description: 'Optional: -Jrampup (seconds)')
+    string(name: 'LOOP_COUNT', defaultValue: '', description: 'Optional: -Jloopcount')
+  }
+  environment {
+    RESULTS_ROOT = 'jmeter-ci/results'
+  }
+  stages {
+    stage('Prepare') {
+      steps {
+        sh 'mkdir -p jmeter-ci/results'
+        sh 'chmod +x jmeter-ci/scripts/run-jmeter.sh'
+        sh 'echo "Workspace: $(pwd)"'
+      }
+    }
+    stage('Select Test') {
+      steps {
+        script {
+          def filesRaw = sh(script: 'ls -1 jmeter-ci/tests/*.jmx 2>/dev/null || true', returnStdout: true).trim()
+          if (filesRaw) {
+            def choicesText = filesRaw.split('\n').join('\n')
+            def selection = input(message: 'Select a JMX test from jmeter-ci/tests', parameters: [
+              [$class: 'ChoiceParameterDefinition', name: 'SELECTED_JMX', choices: choicesText, description: 'Pick one test to run']
+            ])
+            env.TEST = selection
+            echo "Selected test: ${env.TEST}"
+          } else {
+            echo 'No .jmx files found under jmeter-ci/tests/. Falling back to TEST parameter.'
+          }
+        }
+      }
+    }
+    stage('Run JMeter') {
+      steps {
+        sh label: 'Execute JMeter', script: '''
+          export TEST="${TEST}"
+          export RESULTS_ROOT="${RESULTS_ROOT}"
+          export ENDPOINT="${ENDPOINT}"
+          export THREADS="${THREADS}"
+          export DURATION="${DURATION}"
+          export RAMP_UP="${RAMP_UP}"
+          export LOOP_COUNT="${LOOP_COUNT}"
+          jmx="${TEST}"
+          if [ -z "$jmx" ]; then
+            echo "No TEST provided. Set the TEST parameter to a JMX file."
+            exit 1
+          fi
+
+          echo "Running JMeter for: $jmx"
+          export JMX_PATH="$jmx"
+          jmeter-ci/scripts/run-jmeter.sh
+        '''
+      }
+    }
+    stage('Archive Artifacts') {
+      steps {
+        script {
+          // Archive everything in results, including HTML report
+          archiveArtifacts artifacts: 'jmeter-ci/results/**', fingerprint: true, allowEmptyArchive: false
+        }
+      }
+    }
+    stage('Publish HTML Report') {
+      steps {
+        script {
+          // Publish the latest report folder if present
+          def latest = sh(script: 'ls -1dt jmeter-ci/results/*/report 2>/dev/null | head -n1', returnStdout: true).trim()
+          if (latest) {
+            publishHTML(target: [
+              allowMissing: true,
+              keepAll: true,
+              alwaysLinkToLastBuild: true,
+              reportDir: latest,
+              reportFiles: 'index.html',
+              reportName: 'JMeter HTML Report'
+            ])
+          } else {
+            echo 'No HTML report directory found to publish.'
+          }
+        }
+      }
+    }
+  }
+  post {
+    always {
+      cleanWs deleteDirs: false, notFailBuild: true
+    }
+  }
+}
