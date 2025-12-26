@@ -7,7 +7,7 @@ pipeline {
     booleanParam(name: 'HTML_REPORT', defaultValue: true, description: 'Generate and publish the JMeter HTML report')
 
     string(name: 'THREADS', defaultValue: '', description: 'Optional: -Jthreads value')
-    string(name: 'DURATION', defaultValue: '', description: 'Optional: -Jduration (seconds)')
+    string(name: 'DURATION', defaultValue: '', description: 'Optional: -Jduration (minutes)')
     string(name: 'RAMP_UP', defaultValue: '', description: 'Optional: -Jrampup (seconds)')
     string(name: 'LOOP_COUNT', defaultValue: '', description: 'Optional: -Jloopcount')
   }
