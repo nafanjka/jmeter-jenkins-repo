@@ -66,7 +66,12 @@ fi
 # Compose jmeter command
 JMETER_CMD=( jmeter -n -t "$JMX_PATH" -l "$RESULTS_DIR/results.jtl" -j "$RESULTS_DIR/jmeter.log" )
 JMETER_CMD+=( "${J_FLAGS[@]}" )
-JMETER_CMD+=( -e -o "$RESULTS_DIR/report" )
+
+# Control HTML report generation via env var (default: true)
+HTML_REPORT="${HTML_REPORT:-true}"
+if [[ "$HTML_REPORT" == "true" || "$HTML_REPORT" == "1" ]]; then
+  JMETER_CMD+=( -e -o "$RESULTS_DIR/report" )
+fi
 
 # Validate JMX exists
 if [[ ! -f "$JMX_PATH" ]]; then

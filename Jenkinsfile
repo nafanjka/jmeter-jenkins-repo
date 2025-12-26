@@ -4,6 +4,7 @@ pipeline {
   parameters {
     string(name: 'TEST', defaultValue: 'tests/Test_Plan.jmx', description: 'Single JMX file to run (relative to workspace root or absolute).')
     string(name: 'ENDPOINT', defaultValue: 'https://localhost:8000', description: 'Target endpoint URL (protocol://host:port).')
+    booleanParam(name: 'HTML_REPORT', defaultValue: true, description: 'Generate and publish the JMeter HTML report')
 
     string(name: 'THREADS', defaultValue: '', description: 'Optional: -Jthreads value')
     string(name: 'DURATION', defaultValue: '', description: 'Optional: -Jduration (seconds)')
@@ -44,6 +45,7 @@ pipeline {
           export DURATION="${DURATION}"
           export RAMP_UP="${RAMP_UP}"
           export LOOP_COUNT="${LOOP_COUNT}"
+          export HTML_REPORT="${HTML_REPORT}"
           jmx="${TEST}"
           if [ -z "$jmx" ]; then
             echo "No TEST provided. Set the TEST parameter to a JMX file."
@@ -67,19 +69,23 @@ pipeline {
     stage('Publish HTML Report') {
       steps {
         script {
-          // Publish the latest report folder if present
-          def latest = sh(script: 'ls -1dt results/*/report 2>/dev/null | head -n1', returnStdout: true).trim()
-          if (latest) {
-            publishHTML(target: [
-              allowMissing: true,
-              keepAll: true,
-              alwaysLinkToLastBuild: true,
-              reportDir: latest,
-              reportFiles: 'index.html',
-              reportName: 'JMeter HTML Report'
-            ])
+          // Publish the latest report folder if present and enabled
+          if (params.HTML_REPORT) {
+            def latest = sh(script: 'ls -1dt results/*/report 2>/dev/null | head -n1', returnStdout: true).trim()
+            if (latest) {
+              publishHTML(target: [
+                allowMissing: true,
+                keepAll: true,
+                alwaysLinkToLastBuild: true,
+                reportDir: latest,
+                reportFiles: 'index.html',
+                reportName: 'JMeter HTML Report'
+              ])
+            } else {
+              echo 'No HTML report directory found to publish.'
+            }
           } else {
-            echo 'No HTML report directory found to publish.'
+            echo 'HTML report publishing disabled by parameter.'
           }
         }
       }
