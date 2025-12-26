@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Test Plan">
+      <boolProp name="TestPlan.serialize_threadgroups">true</boolProp>
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+        <collectionProp name="Arguments.arguments"/>
+      </elementProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+    </TestPlan>
+    <hashTree>
+      <JDBCDataSource guiclass="TestBeanGUI" testclass="JDBCDataSource" testname="JDBC Connector to LoadTest_DB" enabled="false">
+        <boolProp name="autocommit">true</boolProp>
+        <stringProp name="checkQuery"></stringProp>
+        <stringProp name="connectionAge">5000</stringProp>
+        <stringProp name="connectionProperties"></stringProp>
+        <stringProp name="dataSource">LoadTest_DB</stringProp>
+        <stringProp name="dbUrl">jdbc:mysql://performance-team-db.citbciuqq394.ap-southeast-1.rds.amazonaws.com:3306</stringProp>
+        <stringProp name="driver">com.mysql.cj.jdbc.Driver</stringProp>
+        <stringProp name="initQuery"></stringProp>
+        <boolProp name="keepAlive">true</boolProp>
+        <stringProp name="password">KurwaMatj69%</stringProp>
+        <stringProp name="poolMax">0</stringProp>
+        <boolProp name="preinit">false</boolProp>
+        <stringProp name="timeout">10000</stringProp>
+        <stringProp name="transactionIsolation">DEFAULT</stringProp>
+        <stringProp name="trimInterval">60000</stringProp>
+        <stringProp name="username">admin</stringProp>
+      </JDBCDataSource>
+      <hashTree/>
+      <SetupThreadGroup guiclass="SetupThreadGroupGui" testclass="SetupThreadGroup" testname="setUp">
+        <intProp name="ThreadGroup.num_threads">1</intProp>
+        <intProp name="ThreadGroup.ramp_time">1</intProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
+          <stringProp name="LoopController.loops">1</stringProp>
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+        </elementProp>
+      </SetupThreadGroup>
+      <hashTree>
+        <JSR223Sampler guiclass="TestBeanGUI" testclass="JSR223Sampler" testname="JSR223 Sampler">
+          <stringProp name="cacheKey">true</stringProp>
+          <stringProp name="filename"></stringProp>
+          <stringProp name="parameters"></stringProp>
+          <stringProp name="script">import org.apache.jmeter.services.FileServer
+import org.apache.commons.io.FilenameUtils
+
+// Get job name from script file
+def job_name = FilenameUtils.removeExtension(FileServer.getFileServer().getScriptName())
+props.put(&quot;job_name&quot;, job_name)
+log.info(&quot;Current test is: $job_name&quot;)</stringProp>
+          <stringProp name="scriptLanguage">groovy</stringProp>
+        </JSR223Sampler>
+        <hashTree/>
+        <JDBCSampler guiclass="TestBeanGUI" testclass="JDBCSampler" testname="GetProperties_fromDB" enabled="false">
+          <stringProp name="dataSource">LoadTest_DB</stringProp>
+          <stringProp name="queryType">Select Statement</stringProp>
+          <stringProp name="query">SELECT 
+server, 
+num_of_threads, 
+ramp_up, 
+loop_count, 
+test_duration, 
+merchant_id,
+merchant_secretkey,
+invoice_prefix,
+pan,
+expiry_month,
+expiry_year,
+cvv,
+description,
+currency_code,
+payment_amount,
+pub_cert,
+private_key,
+email,
+multicurrency,
+version,
+localORstoredCard
+FROM LoadTest_DB.jobs_configs jc
+INNER JOIN LoadTest_DB.test_jobs tj
+ON jc.job_id = tj.job_id
+INNER JOIN LoadTest_DB.user_params up
+ON jc.param_id = up.param_id
+WHERE tj.job_name = &quot;${__P(job_name)}&quot;;</stringProp>
+          <stringProp name="queryArguments"></stringProp>
+          <stringProp name="queryArgumentsTypes"></stringProp>
+          <stringProp name="variableNames"></stringProp>
+          <stringProp name="resultVariable">job_config</stringProp>
+          <stringProp name="queryTimeout"></stringProp>
+          <stringProp name="resultSetMaxRows"></stringProp>
+          <stringProp name="resultSetHandler">Store as Object</stringProp>
+        </JDBCSampler>
+        <hashTree>
+          <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="Naming">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">import org.apache.jmeter.services.FileServer
+import org.apache.commons.io.FilenameUtils
+
+// Get job name from script file
+def job_name = FilenameUtils.removeExtension(FileServer.getFileServer().getScriptName())
+props.put(&quot;job_name&quot;, job_name)
+log.info(&quot;Current test is: $job_name&quot;)</stringProp>
+          </JSR223PreProcessor>
+          <hashTree/>
+          <JSR223Assertion guiclass="TestBeanGUI" testclass="JSR223Assertion" testname="inputs">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script">if (prev.getResponseCode() == &quot;200&quot;) {
+    def jobConfig = vars.getObject(&quot;job_config&quot;)
+    if (jobConfig &amp;&amp; jobConfig.size() != 0) {
+        def keys = [
+            &quot;server&quot;, &quot;num_of_threads&quot;, &quot;ramp_up&quot;, &quot;loop_count&quot;, &quot;test_duration&quot;,
+            &quot;merchant_id&quot;, &quot;merchant_secretkey&quot;, &quot;invoice_prefix&quot;, &quot;pan&quot;, &quot;expiry_month&quot;,
+            &quot;expiry_year&quot;, &quot;cvv&quot;, &quot;description&quot;, &quot;currency_code&quot;, &quot;payment_amount&quot;,
+            &quot;pub_cert&quot;, &quot;private_key&quot;, &quot;email&quot;, &quot;multicurrency&quot;, &quot;version&quot;, &quot;localORstoredCard&quot;
+        ]
+        def config = jobConfig.get(0)
+        keys.each { key -&gt;
+            def value = config.get(key)
+            props.put(key, value != null ? value.toString() : &quot;&quot;)
+            log.info(&quot; $key: $value&quot;)
+        }
+    } else {
+        FailureMessage = &quot;!!!!!!!!!!!! The response is empty !!!!!!!!!!!!!&quot;
+        Failure = true
+        prev.setStopThread(true)
+    }
+} else {
+    FailureMessage = &quot;!!!!!!!!!!!! No connection to the database !!!!!!!!!!!!!&quot;
+    Failure = true
+    prev.setStopThread(true)
+}
+
+def sleepTime = 5 // seconds
+def step = 1 // seconds
+
+log.info(&quot;Preparing for Main load test run ...&quot;)
+for (int t = sleepTime; t &gt; 0; t -= step) {
+    log.info(&quot;Readiness: &quot; + t + &quot; s left&quot;)
+    Thread.sleep(step * 1000) // sleep for 1 second
+}
+log.info(&quot;Main Load test execution...&quot;)
+Thread.sleep(2000)</stringProp>
+          </JSR223Assertion>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="MainTest">
+        <intProp name="ThreadGroup.num_threads">5</intProp>
+        <intProp name="ThreadGroup.ramp_time">5</intProp>
+        <stringProp name="ThreadGroup.duration">${__jexl3(${__P(test_duration)}*60)}</stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
+          <intProp name="LoopController.loops">-1</intProp>
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+        </elementProp>
+      </ThreadGroup>
+      <hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="${__P(job_name)}">
+          <stringProp name="HTTPSampler.domain">localhost</stringProp>
+          <stringProp name="HTTPSampler.port">8000</stringProp>
+          <stringProp name="HTTPSampler.protocol">http</stringProp>
+          <stringProp name="HTTPSampler.path">/public/crocodiles/</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.postBodyRaw">false</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.implementation">HttpClient4</stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <JSR223PreProcessor guiclass="TestBeanGUI" testclass="JSR223PreProcessor" testname="JSR223 PreProcessor" enabled="false">
+            <stringProp name="scriptLanguage">groovy</stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="script"></stringProp>
+          </JSR223PreProcessor>
+          <hashTree/>
+          <JSR223PostProcessor guiclass="TestBeanGUI" testclass="JSR223PostProcessor" testname="JSR223 PostProcessor" enabled="false">
+            <stringProp name="cacheKey">true</stringProp>
+            <stringProp name="filename"></stringProp>
+            <stringProp name="parameters"></stringProp>
+            <stringProp name="script">import org.bouncycastle.util.encoders.Base64
+import com.ccpp.PKCS7
+import org.apache.jmeter.samplers.SampleResult
+import org.apache.commons.lang3.StringUtils
+
+def response_modification = 2 // 0 - dirty, 1 - clean, 2 - summary
+
+def code = prev.getResponseCode() as int
+
+if (code in 400..599) {
+    def msg = &quot;empty response because of Server error: $code&quot;
+    prev.setResponseData(msg)
+    prev.setDataType(SampleResult.TEXT)
+    prev.setSuccessful(false)
+    prev.setResponseMessage(&quot;Assertion failed: $msg&quot;)
+} else if (code in 200..299) {
+    def privateKey = props.get(&quot;private_key&quot;)
+    def dirty = prev.getResponseDataAsString()
+    def clean = PKCS7.decrypt(privateKey, &quot;2c2p&quot;, Base64.decode(dirty), &quot;pwdpwdpwd&quot;)
+    def respCodeTag = StringUtils.substringBetween(clean, &quot;&lt;respCode&gt;&quot;, &quot;&lt;/respCode&gt;&quot;)
+    def invoiceNo = StringUtils.substringBetween(clean, &quot;&lt;uniqueTransactionCode&gt;&quot;, &quot;&lt;/uniqueTransactionCode&gt;&quot;)
+    def status = StringUtils.substringBetween(clean, &quot;&lt;status&gt;&quot;, &quot;&lt;/status&gt;&quot;)
+    def reason = StringUtils.substringBetween(clean, &quot;&lt;failReason&gt;&quot;, &quot;&lt;/failReason&gt;&quot;)
+    def summary = &quot;Status server: $code || respCode: $respCodeTag || invoiceNo: $invoiceNo || status: $status || reason: $reason&quot;
+    if (respCodeTag == &quot;00&quot;) {
+        if (response_modification == 0) {
+            prev.setResponseData(dirty)
+        } else if (response_modification == 1) {
+            prev.setResponseData(clean)
+        } else if (response_modification == 2) {
+            prev.setResponseData(summary)
+        }
+        prev.setSuccessful(true)
+    } else {
+        prev.setResponseData(summary)
+        prev.setSuccessful(false)
+        prev.setDataType(SampleResult.TEXT)
+        prev.setResponseMessage(&quot;Assertion failed: $summary&quot;)
+    }
+}
+
+// Loop control
+def threadNum = ctx.getThreadNum()
+def maxLoops = (props.get(&quot;loop_count&quot;) ?: &quot;0&quot;) as int
+if (maxLoops &gt; 0) {
+    def key = &quot;executedLoops_${threadNum}&quot;
+    def executed = (vars.get(key) ?: &quot;0&quot;) as int
+    executed++
+    vars.put(key, executed.toString())
+    if (executed &gt;= maxLoops) ctx.getThreadGroup().stopThread(threadNum, true)
+}</stringProp>
+            <stringProp name="scriptLanguage">groovy</stringProp>
+          </JSR223PostProcessor>
+          <hashTree/>
+          <BackendListener guiclass="BackendListenerGui" testclass="BackendListener" testname="Backend Listener" enabled="false">
+            <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
+              <collectionProp name="Arguments.arguments">
+                <elementProp name="influxdbMetricsSender" elementType="Argument">
+                  <stringProp name="Argument.name">influxdbMetricsSender</stringProp>
+                  <stringProp name="Argument.value">org.apache.jmeter.visualizers.backend.influxdb.HttpMetricsSender</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="influxdbUrl" elementType="Argument">
+                  <stringProp name="Argument.name">influxdbUrl</stringProp>
+                  <stringProp name="Argument.value">http://172.31.31.5:8086/api/v2/write?org=PerformanceUA&amp;bucket=jmeter</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="application" elementType="Argument">
+                  <stringProp name="Argument.name">application</stringProp>
+                  <stringProp name="Argument.value">performanceTeam</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="measurement" elementType="Argument">
+                  <stringProp name="Argument.name">measurement</stringProp>
+                  <stringProp name="Argument.value">jmeter</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="summaryOnly" elementType="Argument">
+                  <stringProp name="Argument.name">summaryOnly</stringProp>
+                  <stringProp name="Argument.value">false</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="samplersRegex" elementType="Argument">
+                  <stringProp name="Argument.name">samplersRegex</stringProp>
+                  <stringProp name="Argument.value">${__P(job_name)}*</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="percentiles" elementType="Argument">
+                  <stringProp name="Argument.name">percentiles</stringProp>
+                  <stringProp name="Argument.value">99;95;90;50</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="testTitle" elementType="Argument">
+                  <stringProp name="Argument.name">testTitle</stringProp>
+                  <stringProp name="Argument.value">${__P(job_name)}</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="eventTags" elementType="Argument">
+                  <stringProp name="Argument.name">eventTags</stringProp>
+                  <stringProp name="Argument.value"></stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+                <elementProp name="influxdbToken" elementType="Argument">
+                  <stringProp name="Argument.name">influxdbToken</stringProp>
+                  <stringProp name="Argument.value">n6BKmFK_uKVb59ktesGpCtYmFFD9xTUq7ZHMgZnKvikcSQ_0VgzRZBHX6jHb0bosGuti2q4yWY7qt77o8kicsQ==</stringProp>
+                  <stringProp name="Argument.metadata">=</stringProp>
+                </elementProp>
+              </collectionProp>
+            </elementProp>
+            <stringProp name="classname">org.apache.jmeter.visualizers.backend.influxdb.InfluxdbBackendListenerClient</stringProp>
+            <stringProp name="QUEUE_SIZE">10000</stringProp>
+          </BackendListener>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+      <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>true</dataType>
+            <encoding>false</encoding>
+            <assertions>true</assertions>
+            <subresults>true</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>true</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>false</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+            <assertionsResultsToSave>0</assertionsResultsToSave>
+            <bytes>true</bytes>
+            <sentBytes>true</sentBytes>
+            <url>true</url>
+            <threadCounts>true</threadCounts>
+            <idleTime>true</idleTime>
+            <connectTime>true</connectTime>
+          </value>
+        </objProp>
+        <stringProp name="filename"></stringProp>
+      </ResultCollector>
+      <hashTree/>
+      <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector" testname="Aggregate Report">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>true</dataType>
+            <encoding>false</encoding>
+            <assertions>true</assertions>
+            <subresults>true</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>true</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>false</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+            <assertionsResultsToSave>0</assertionsResultsToSave>
+            <bytes>true</bytes>
+            <sentBytes>true</sentBytes>
+            <url>true</url>
+            <threadCounts>true</threadCounts>
+            <idleTime>true</idleTime>
+            <connectTime>true</connectTime>
+          </value>
+        </objProp>
+        <stringProp name="filename"></stringProp>
+      </ResultCollector>
+      <hashTree/>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>
